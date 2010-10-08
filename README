@@ -3,7 +3,7 @@ JavaScript library independent (ideally) version of the LemonStand frontend. Onl
 
 Warning! Warning! Danger, Will Robinson! This is an alpha version. That means it is subject to highly volatile changes. 
 
-MooTools (language prototyping, class centric), is a much different library than jQuery (functional, chaining, plugin centric). Compromises have been made for backwards combatibility.
+MooTools (language prototyping, class centric), is a much different library than jQuery (chaining, functional plugin centric). Compromises have been made for backwards combatibility.
 
 == Installation
 1) Remove <?= include_resources() ?> from your templates.
