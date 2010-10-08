@@ -1,0 +1,27 @@
+.ajax_loading_indicator
+{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  color: black;
+  font: bold 12px Arial,Tahoma,Verdana,Helvetica,sans-serif;
+  margin: 0;
+  z-index: 100000;
+}
+
+.ajax_loading_indicator span
+{
+  background: #FFD62B;
+  display: block;
+  width: 15em;
+  margin: 0 auto;
+  text-align: center;
+  padding: 0.3em 0;
+  border-radius-bottomleft: 5px;
+  border-radius-bottomright: 5px;
+  -moz-border-radius-bottomright: 5px;
+  -moz-border-radius-bottomleft: 5px;
+  -webkit-border-bottom-right-radius: 5px;
+  -webkit-border-bottom-left-radius: 5px;
+}​

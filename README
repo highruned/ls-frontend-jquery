@@ -1,0 +1,7 @@
+== ls-frontend
+JavaScript independent version of the LemonStand front-end. Will use jQuery by default.
+
+Warning! Warning! Danger, Will Robinson! This is an alpha version.
+
+== License
+ls-frontend is released under the MIT license. A copy of the MIT license can be found in the LICENSE file.
