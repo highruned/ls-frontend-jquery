@@ -11,7 +11,7 @@ MooTools (language prototyping, class centric), is a much different library than
 3) Include ls_cms.css if you want default styles.
 4) Remove any references to jQuery.noConflict(). The $ (money) variable is required.
 
-== Example (change the appropriate paths)
+== Example (upload files and change the appropriate paths)
 <link href="<?= root_url('/resources/css/ls_cms.css') ?>" rel="stylesheet" media="screen" />
 <script src="<?= root_url('/resources/js/jquery-1.4.2.min.js') ?>"></script>
 <script src="<?= root_url('/resources/js/ls_cms.js') ?>"></script>
