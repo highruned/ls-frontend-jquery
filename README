@@ -1,5 +1,5 @@
 == ls-frontend
-JavaScript library independent (ideally) version of the LemonStand front-end. Will use jQuery alone for now.
+JavaScript library independent (ideally) version of the LemonStand frontend. Only uses jQuery at the moment.
 
 Warning! Warning! Danger, Will Robinson! This is an alpha version. That means it is subject to highly volatile changes. 
 
