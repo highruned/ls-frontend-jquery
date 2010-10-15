@@ -1,5 +1,5 @@
 (function($) {
-  $.cookie = function(name, value, options) {
+  jQuery.cookie = function(name, value, options) {
       if (typeof value != 'undefined') { // name and value given, set cookie
           options = options || {};
           if (value === null) {
@@ -83,7 +83,7 @@
         }
       }, context);
 
-      $.ls_cms.send_request(url, handler, context);
+      $.Phpr.sendRequest(url, handler, context);
     });
 
     return false;
@@ -108,7 +108,7 @@
     return text;
   };
 
-  $.ls_cms = {
+  $.Phpr = {
     options: {
       handler: false,
       extraFields: {},
@@ -139,11 +139,11 @@
         html: '',
         javascript: ''
       },
-      on_complete: function() {
+      onComplete: function() {
         var self = this;
         
         if(self.parent.options.loadingIndicator.show)
-          self.parent.hide_loading_indicator();
+          self.parent.hideLoadingIndicator();
         
         self.response.html = strip_scripts(this.response.text, function(javascript) {
           self.response.javascript = javascript;
@@ -151,7 +151,7 @@
         
         eval(self.response.javascript);
       },
-      on_success: function() {
+      onSuccess: function() {
         var self = this;
         
         var pattern = />>[^<>]*<</g;
@@ -168,18 +168,17 @@
           $('#' + id).html(html);
         }
       },
-      on_failure: function(data) {
-        this.popup_error();
+      onFailure: function(data) {
+        this.popupError();
       },
-      is_success: function() {
+      isSuccess: function() {
         return this.response.text.search("@AJAX-ERROR@") == -1;
       },
-      popup_error: function() {
+      popupError: function() {
         alert(this.response.html.replace('@AJAX-ERROR@', ''));
       }
     },
-
-    send_request: function(url, handler, context) {
+    sendPhpr: function(url, handler, context) {
       var self = this;
 
       context = $.extend(true, {
@@ -207,33 +206,36 @@
           var request = $.extend({}, self.request);
           request.response.text = data;
           
-          request.on_complete();
-          request.on_failure();
+          request.onComplete();
+          request.onFailure();
         },
         success: function(data) {
           var request = $.extend({}, self.request);
           request.parent = self;
           request.response.text = data;
           
-          request.on_complete();
+          request.onComplete();
           
-          if(request.is_success())
-            request.on_success();
+          if(request.isSuccess())
+            request.onSuccess();
           else
-            request.on_failure();
+            request.onFailure();
           
           context.onAfterUpdate();
         }
       }, context.ajax);
 
-      
       if(self.options.loadingIndicator.show)
-        self.show_loading_indicator();
+        self.showLoadingIndicator();
 
       $.ajax(request);
     },
     
-    show_loading_indicator: function() {
+    sendRequest: function() {
+      this.sendPhpr.apply(this, arguments);
+    },
+    
+    showLoadingIndicator: function() {
       var self = this;
       
       var options = $.extend(true, {}, self.options.loadingIndicator);
@@ -242,8 +244,8 @@
       //var position = options.absolutePosition ? 'absolute' : 'static';
       var visibility = options.hideElement ? 'hidden' : 'visible';
       
-      if(self.loading_indicator === null) {
-        self.loading_indicator = $('<p />')
+      if(self.loadingIndicator === null) {
+        self.loadingIndicator = $('<p />')
           .css({
             //visibility: visibility,
             //position: position,
@@ -255,14 +257,13 @@
           .appendTo(container);
       }
       
-      self.loading_indicator.show();
+      self.loadingIndicator.show();
     },
     
-    hide_loading_indicator: function() {
-      this.loading_indicator.hide();
+    hideLoadingIndicator: function() {
+      this.loadingIndicator.hide();
     },
     
-    loading_indicator: null
+    loadingIndicator: null
   };
 })(jQuery);
-​
