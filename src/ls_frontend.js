@@ -1,3 +1,10 @@
+/**
+ * @file
+ * jQuery front-end for the LemonStand platform.
+ * ls_frontend re-implements prototypes and methods to match
+ * the MooTools AJAX implementation. Credit: stilbuero for $.cookie plugin.
+ */
+
 (function($) {
   jQuery.cookie = function(name, value, options) {
       if (typeof value != 'undefined') { // name and value given, set cookie
@@ -50,10 +57,21 @@
     }
   };
   
+  /**
+   * Delays calling the current function until time has passed.
+   * @type Function
+   * @param time Milliseconds until invoke.
+   * @return none
+   */
   Function.prototype.delay = function(time) {
     setTimeout(this, time);
   };
   
+  /**
+   * Serializes the current element into a a key=value format.
+   * @type Function
+   * @return String
+   */
   $.fn.serializeParam = function() {
     var params = {};
 
@@ -67,32 +85,57 @@
     return params;
   };
 
+  /**
+   * Returns the parent DOM element of the current element.
+   * @type Function
+   * @return none
+   */
   $.fn.getForm = function() {
     return $(this).parents('form:first');
   };
 
-  $.fn.sendRequest = function(handler, context) {
+  /**
+   * Sends a POST request to the back-end.
+   * @type Function
+   * @param Object context Options to customize the request.
+   * @return Boolean
+   */
+  $.fn.sendRequest = $.fn.sendPhpr = function(handler, context) {
     this.each(function() {
       var self = $(this);
 
       var url = self.attr('action');
 
       context = $.extend(true, {
+        form: self,
         ajax: {
           data: self.serializeParam()
         }
       }, context);
 
-      $.Phpr.sendRequest(url, handler, context);
+      Phpr.sendRequest(url, handler, context);
     });
 
     return false;
   };
   
+  /**
+   * Focuses a field in the current form.
+   * @type Function
+   * @param String field_name Name of the field to focus.
+   * @return none
+   */
   $.fn.focusField = function(field_name) {
     $('[name="' + field_name + '"]').focus();
   };
 
+  /**
+   * Strips and evaulates scripts within a block of text.
+   * @type Function
+   * @param String data The data in which to extract the script.
+   * @param mixed When true, evaluates the script. When a function, calls with the script as an argument.
+   * @return String
+   */
   var strip_scripts = function(data, option) {
     var scripts = '';
 
@@ -102,18 +145,29 @@
       return '';
     });
 
-    if (option === true) eval(scripts);
-    else if (typeof(option) == 'function') option(scripts, text);
+    if (option === true)
+      eval(scripts);
+    else if (typeof(option) == 'function')
+      option(scripts, text);
     
     return text;
   };
 
-  $.Phpr = {
+  /**
+   * Global reference to the Phpr object.
+   * @type Object
+   */
+  window.Phpr = {
+    /**
+     * Container of options Phpr uses internally.
+     * @type Object
+     */
     options: {
+      form: null,
       handler: false,
       extraFields: {},
       selectorMode: false, // use CSS selectors for partial targeting, rather than element ID
-      loadingIndicator: {
+      loadIndicator: {
         show: true,
         hideOnSuccess: true,
         overlayClass: 'ajax_loading_indicator',
@@ -123,6 +177,7 @@
         injectInElement: false,
         noImage: false,
         zIndex: 9999,
+        element: null,
         absolutePosition: true,
         injectPosition: 'bottom',
         overlayOpacity: 1,
@@ -132,58 +187,19 @@
       noLoadingIndicator: false
     },
     
-    request: {
-      parent: null,
-      response: {
-        text: '',
-        html: '',
-        javascript: ''
-      },
-      onComplete: function() {
-        var self = this;
-        
-        if(self.parent.options.loadingIndicator.show)
-          self.parent.hideLoadingIndicator();
-        
-        self.response.html = strip_scripts(this.response.text, function(javascript) {
-          self.response.javascript = javascript;
-        });
-        
-        eval(self.response.javascript);
-      },
-      onSuccess: function() {
-        var self = this;
-        
-        var pattern = />>[^<>]*<</g;
-
-        var patches = self.response.html.match(pattern) || [];
-
-        for(var i = 0, l = patches.length; i < l; ++i) {
-          var index = self.response.html.indexOf(patches[i]) + patches[i].length;
-
-          var html = (i < patches.length-1) ? self.response.html.slice(index, self.response.html.indexOf(patches[i+1])) : self.response.html.slice(index);
-
-          var id = patches[i].slice(2, patches[i].length-2);
-
-          $('#' + id).html(html);
-        }
-      },
-      onFailure: function(data) {
-        this.popupError();
-      },
-      isSuccess: function() {
-        return this.response.text.search("@AJAX-ERROR@") == -1;
-      },
-      popupError: function() {
-        alert(this.response.html.replace('@AJAX-ERROR@', ''));
-      }
-    },
-    sendPhpr: function(url, handler, context) {
+    /**
+     * Sends a POST request to the back-end.
+     * @type Function
+     * @param String url URL to send the request.
+     * @param String handler Handler to invoke with the request.
+     * @param Object context Options to customize the request.
+     * @return none
+     */
+    sendRequest: function(url, handler, context) {
       var self = this;
 
       context = $.extend(true, {
         extraFields: {},
-        onAfterUpdate: function() {},
         ajax: {
           url: url,
           data: {
@@ -195,6 +211,100 @@
 
       $.extend(context.ajax.data, context.extraFields);
 
+      var response = $.extend({
+        /**
+         * Parent object of the request object, which is usually the Phpr object. (defaults to self)
+         * @type Object
+         */
+        parent: self,
+        
+        text: '',
+        html: '',
+        javascript: '',
+        
+        /**
+         * Invoked upon completing a failed and successful AJAX request.
+         * @type Function
+         * @return none
+         */
+        onComplete: function() {
+          var self = this;
+          
+          if(self.parent.options.loadIndicator.show)
+            self.parent.hideLoadingIndicator();
+          
+          self.html = strip_scripts(this.text, function(javascript) {
+            self.javascript = javascript;
+          });
+          
+          eval(self.javascript);
+        },
+        
+        /**
+         * Invoked upon completing a successful AJAX request. Replaces the selected element with the partial data.
+         * @type Function
+         * @return none
+         */
+        onSuccess: function() {
+          var self = this;
+          
+          var pattern = />>[^<>]*<</g;
+  
+          var patches = self.html.match(pattern) || [];
+  
+          for(var i = 0, l = patches.length; i < l; ++i) {
+            var index = self.html.indexOf(patches[i]) + patches[i].length;
+  
+            var html = (i < patches.length-1) ? self.html.slice(index, self.html.indexOf(patches[i+1])) : self.html.slice(index);
+  
+            var id = patches[i].slice(2, patches[i].length-2);
+  
+            $('#' + id).html(html);
+          }
+          
+          // set 'update' element to self.text if 'update' is a string
+          //context.update && !context.update.length && $('#' + context.update).html(self.text);
+        },
+        
+        /**
+         * Invoked upon completing a failed AJAX request. Creates a popup error.
+         * @type Function
+         * @return none
+         */
+        onFailure: function() {
+          this.popupError();
+          
+          context.onAfterError && context.onAfterError();
+        },
+        
+        /**
+         * Determines if an AJAX request is successful based on the back-end's response.
+         * @type Function
+         * @return Boolean
+         */
+        isSuccess: function() {
+          return this.text.search("@AJAX-ERROR@") == -1;
+        },
+        
+        /**
+         * Shows an alert message.
+         * @type Function
+         * @type none
+         */
+        popupError: function() {
+          alert(this.html.replace('@AJAX-ERROR@', ''));
+        }
+      }, context);
+      
+      if(context.preCheckFunction && !context.preCheckFunction())
+        return;
+      
+      context.confirm && confirm(context.confirm);
+      context.alert && alert(context.alert);
+      
+      if(context.postCheckFunction && !context.postCheckFunction())
+        return;
+      
       var request = $.extend({
         beforeSend: function(xhr) {
           xhr.setRequestHeader('PHPR-REMOTE-EVENT', '1');
@@ -203,49 +313,48 @@
         },
         type: 'POST',
         failure: function(data) {
-          var request = $.extend({}, self.request);
-          request.response.text = data;
+          response.text = data;
           
-          request.onComplete();
-          request.onFailure();
+          response.onComplete();
+          response.onFailure();
         },
         success: function(data) {
-          var request = $.extend({}, self.request);
-          request.parent = self;
-          request.response.text = data;
+          response.text = data;
           
-          request.onComplete();
+          response.onComplete();
           
-          if(request.isSuccess())
-            request.onSuccess();
-          else
-            request.onFailure();
+          response.isSuccess() ? response.onSuccess() : response.onFailure();
           
-          context.onAfterUpdate();
+          context.onAfterUpdate && context.onAfterUpdate();
         }
       }, context.ajax);
 
-      if(self.options.loadingIndicator.show)
+      if(self.options.loadIndicator.show)
         self.showLoadingIndicator();
 
+      context.onBeforePost && context.onBeforePost();
+      
       $.ajax(request);
     },
     
-    sendRequest: function() {
-      this.sendPhpr.apply(this, arguments);
-    },
-    
+    /**
+     * Shows the loading indicator.
+     * @type Function
+     * @return none
+     */
     showLoadingIndicator: function() {
       var self = this;
       
-      var options = $.extend(true, {}, self.options.loadingIndicator);
+      var options = $.extend(true, {}, self.options.loadIndicator);
       
-      var container = options.injectInElement ? $('#content') : $('body');
+      var container = options.injectInElement && options.form ? options.form : $('body');
       //var position = options.absolutePosition ? 'absolute' : 'static';
       var visibility = options.hideElement ? 'hidden' : 'visible';
       
       if(self.loadingIndicator === null) {
-        self.loadingIndicator = $('<p />')
+        var element = options.element ? $('#' + options.element) : $('<p />');
+        
+        self.loadingIndicator = element
           .css({
             //visibility: visibility,
             //position: position,
@@ -260,10 +369,19 @@
       self.loadingIndicator.show();
     },
     
+    /**
+     * Hides the loading indicator.
+     * @type Function
+     * @return none
+     */
     hideLoadingIndicator: function() {
       this.loadingIndicator.hide();
     },
     
+    /**
+     * Contains the element used as the loading indicator. (defaults to null)
+     * @type Object
+     */
     loadingIndicator: null
   };
 })(jQuery);
