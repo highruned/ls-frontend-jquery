@@ -7,10 +7,10 @@ MooTools (language prototyping, class centric), is a much different library than
 
 ## Installation
 
-* Remove <?= include_resources() ?> from your templates.
-* Include jQuery first, then ls_cms.js into your template.
-* Include ls_cms.css if you want default styles.
-* Remove any references to jQuery.noConflict(). The $ (money) variable is required.
+1. Remove <?= include_resources() ?> from your templates.
+1. Include jQuery first, then ls_cms.js into your template.
+1. Include ls_cms.css if you want default styles.
+1. Remove any references to jQuery.noConflict(). The $ (money) variable is required.
 
 ## Example (upload files and change the appropriate paths)
 <link href="<?= root_url('/resources/css/ls_frontend.css') ?>" rel="stylesheet" media="screen" />
