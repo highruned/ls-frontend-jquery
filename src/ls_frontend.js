@@ -136,7 +136,7 @@
    * @param mixed When true, evaluates the script. When a function, calls with the script as an argument.
    * @return String
    */
-  var strip_scripts = function(data, option) {
+  var stripScripts = function(data, option) {
     var scripts = '';
 
     var text = data.replace(/<script[^>]*>([^<]*?)<\/script>/gi, function() {
@@ -178,10 +178,10 @@
         noImage: false,
         zIndex: 9999,
         element: null,
-        absolutePosition: true,
+        absolutePosition: false,
         injectPosition: 'bottom',
         overlayOpacity: 1,
-        hideElement: true
+        hideElement: false
       },
       evalResponse: true,
       noLoadingIndicator: false
@@ -197,6 +197,9 @@
      */
     sendRequest: function(url, handler, context) {
       var self = this;
+      
+      if(self.busy)
+        return;
 
       context = $.extend(true, {
         extraFields: {},
@@ -230,10 +233,12 @@
         onComplete: function() {
           var self = this;
           
+          self.parent.busy = false;
+          
           if(self.parent.options.loadIndicator.show)
             self.parent.hideLoadingIndicator();
           
-          self.html = strip_scripts(this.text, function(javascript) {
+          self.html = stripScripts(this.text, function(javascript) {
             self.javascript = javascript;
           });
           
@@ -262,8 +267,8 @@
             $('#' + id).html(html);
           }
           
-          // set 'update' element to self.text if 'update' is a string
-          //context.update && !context.update.length && $('#' + context.update).html(self.text);
+          // if update element is a string, set update element to self.text
+          context.update && $('#' + context.update).html(self.text);
         },
         
         /**
@@ -298,10 +303,13 @@
       
       if(context.preCheckFunction && !context.preCheckFunction())
         return;
+        
+      if(context.alert)
+        return alert(context.alert);
       
-      context.confirm && confirm(context.confirm);
-      context.alert && alert(context.alert);
-      
+      if(context.confirm && !confirm(context.confirm))
+        return;
+        
       if(context.postCheckFunction && !context.postCheckFunction())
         return;
       
@@ -332,8 +340,10 @@
       if(self.options.loadIndicator.show)
         self.showLoadingIndicator();
 
+      context.prepareFunction && context.prepareFunction();
       context.onBeforePost && context.onBeforePost();
       
+      self.busy = true;
       $.ajax(request);
     },
     
@@ -348,7 +358,7 @@
       var options = $.extend(true, {}, self.options.loadIndicator);
       
       var container = options.injectInElement && options.form ? options.form : $('body');
-      //var position = options.absolutePosition ? 'absolute' : 'static';
+      var position = options.absolutePosition ? 'absolute' : 'static';
       var visibility = options.hideElement ? 'hidden' : 'visible';
       
       if(self.loadingIndicator === null) {
@@ -356,8 +366,8 @@
         
         self.loadingIndicator = element
           .css({
-            //visibility: visibility,
-            //position: position,
+            visibility: visibility,
+            position: position,
             opacity: options.overlayOpacity,
             zIndex: options.zIndex
           })
@@ -382,6 +392,9 @@
      * Contains the element used as the loading indicator. (defaults to null)
      * @type Object
      */
-    loadingIndicator: null
+    loadingIndicator: null,
+    
+    busy: false
   };
 })(jQuery);
+
