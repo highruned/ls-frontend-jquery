@@ -207,7 +207,7 @@
           url: url,
           data: {
             cms_handler_name: handler,
-            cms_update_elements: context && context['update'] ? context['update'] : {}
+            cms_update_elements: context && context['update'] && typeof(context['update']) !== 'string' ? context['update'] : {}
           }
         }
       }, context);
@@ -232,7 +232,7 @@
          */
         onComplete: function() {
           var self = this;
-          
+
           self.parent.busy = false;
           
           if(self.parent.options.loadIndicator.show)
@@ -252,23 +252,27 @@
          */
         onSuccess: function() {
           var self = this;
-          
+
           var pattern = />>[^<>]*<</g;
-  
+
           var patches = self.html.match(pattern) || [];
-  
+
           for(var i = 0, l = patches.length; i < l; ++i) {
             var index = self.html.indexOf(patches[i]) + patches[i].length;
-  
+
             var html = (i < patches.length-1) ? self.html.slice(index, self.html.indexOf(patches[i+1])) : self.html.slice(index);
   
             var id = patches[i].slice(2, patches[i].length-2);
-  
-            $('#' + id).html(html);
+
+            if(id)
+              $('#' + id).html(html);
           }
-          
+
           // if update element is a string, set update element to self.text
-          context.update && $('#' + context.update).html(self.text);
+          context.update && typeof(context.update) === 'string' && $('#' + context.update).html(self.text);
+          
+          context.onAfterUpdate && context.onAfterUpdate();
+          context.onSuccess && context.onSuccess();
         },
         
         /**
@@ -280,6 +284,7 @@
           this.popupError();
           
           context.onAfterError && context.onAfterError();
+          context.onFailure && context.onFailure();
         },
         
         /**
@@ -299,7 +304,7 @@
         popupError: function() {
           alert(this.html.replace('@AJAX-ERROR@', ''));
         }
-      }, context);
+      }, {});
       
       if(context.preCheckFunction && !context.preCheckFunction())
         return;
@@ -332,8 +337,6 @@
           response.onComplete();
           
           response.isSuccess() ? response.onSuccess() : response.onFailure();
-          
-          context.onAfterUpdate && context.onAfterUpdate();
         }
       }, context.ajax);
 
