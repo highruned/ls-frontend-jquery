@@ -76,9 +76,6 @@
     var params = {};
 
     $.each(this.serializeArray(), function(index, value) {
-      if(params[value.name])
-        params[value.name] = [params[value.name], value.value];
-      else
         params[value.name] = value.value;
     });
 
@@ -158,6 +155,16 @@
    * @type Object
    */
   window.Phpr = {
+    response: {
+      /**
+       * Shows an alert message.
+       * @type Function
+       * @type none
+       */
+      popupError: function() {
+        alert(this.html.replace('@AJAX-ERROR@', ''));
+      }
+    },
     /**
      * Container of options Phpr uses internally.
      * @type Object
@@ -207,7 +214,7 @@
           url: url,
           data: {
             cms_handler_name: handler,
-            cms_update_elements: context && context['update'] && typeof(context['update']) !== 'string' ? context['update'] : {}
+            cms_update_elements: context && context['update'] ? context['update'] : {}
           }
         }
       }, context);
@@ -294,17 +301,8 @@
          */
         isSuccess: function() {
           return this.text.search("@AJAX-ERROR@") == -1;
-        },
-        
-        /**
-         * Shows an alert message.
-         * @type Function
-         * @type none
-         */
-        popupError: function() {
-          alert(this.html.replace('@AJAX-ERROR@', ''));
         }
-      }, {});
+      }, Phpr.response);
       
       if(context.preCheckFunction && !context.preCheckFunction())
         return;
@@ -400,4 +398,3 @@
     busy: false
   };
 })(jQuery);
-
