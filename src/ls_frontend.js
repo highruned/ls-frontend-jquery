@@ -144,15 +144,15 @@
 	var stripScripts = function(data, option) {
 		var scripts = '';
 
-		var text = data.replace(/<script[^>]*>([^<]*?)<\/script>/gi, function() {
+		var text = data.replace(/<script[^>]*>([^\b]*?)<\/script>/gi, function() {
 			scripts += arguments[1] + '\n';
 			
 			return '';
 		});
 
-		if (option === true)
+		if(option === true)
 			eval(scripts);
-		else if (typeof(option) == 'function')
+		else if(typeof(option) == 'function')
 			option(scripts, text);
 		
 		return text;
@@ -169,8 +169,8 @@
 			 * @type Function
 			 * @type none
 			 */
-			popupError: function() {
-				alert(this.html.replace('@AJAX-ERROR@', ''));
+			popupError: function(message) {
+				alert(message);
 			}
 		},
 		/**
@@ -199,7 +199,14 @@
 				hideElement: false
 			},
 			evalResponse: true,
-			noLoadingIndicator: false
+			noLoadingIndicator: false,
+			execScriptsOnFailure: true,
+			evalScripts: true,
+			evalScriptsAfterUpdate: false,
+			lock: true,
+			animation: function(element, html) {
+				element.html(html);
+			}
 		},
 		
 		/**
@@ -216,16 +223,18 @@
 			if(self.busy)
 				return;
 
-			context = $.extend(true, {
+			context = $.extend(true, {}, self.options, {
 				extraFields: {},
 				ajax: {
 					url: url,
 					data: {
-						cms_handler_name: handler,
-						cms_update_elements: context && context['update'] ? context['update'] : undefined
+						cms_handler_name: handler
 					}
 				}
 			}, context);
+			
+			if(context['update'])
+				context.ajax.data['cms_update_elements'] = context['update'];
 
 			$.extend(context.ajax.data, context.extraFields);
 
@@ -250,10 +259,13 @@
 
 					self.parent.busy = false;
 					
-					if(self.parent.options.loadIndicator.show)
+					if(typeof(self.text) !== 'string')
+						self.text = '';
+					
+					if(context.loadIndicator.show)
 						self.parent.hideLoadingIndicator();
 					
-					self.html = stripScripts(this.text, function(javascript) {
+					self.html = stripScripts(self.text, function(javascript) {
 						self.javascript = javascript;
 					});
 				},
@@ -263,12 +275,11 @@
 				 * @type Function
 				 * @return none
 				 */
-				onSuccess: function() {
+				onSuccess: function(data) {
 					var self = this;
-
 					var pattern = />>[^<>]*<</g;
-
 					var patches = self.html.match(pattern) || [];
+					var update_elements = [];
 
 					for(var i = 0, l = patches.length; i < l; ++i) {
 						var index = self.html.indexOf(patches[i]) + patches[i].length;
@@ -278,19 +289,32 @@
 						var id = patches[i].slice(2, patches[i].length-2);
 
 						if(id) {
-							$('#' + id).html(html);
-							
-							$(window).trigger('onAfterAjaxUpdate', id);
+							var element;
+						
+							if(context.selectorMode)
+								element = $(id);
+							else
+								element = $('#' + id);
+								
+							if(!context.animation(element, html))
+								element.html(html);
+								
+							update_elements.push(id);
 						}
 					}
 
 					// if update element is a string, set update element to self.text
 					context.update && typeof(context.update) === 'string' && $('#' + context.update).html(self.text);
-					console.log(self.javascript);
-					eval(self.javascript);
+					
+					if(context.evalScripts && !context.evalScriptsAfterUpdate) 
+						eval(self.javascript);
+					
+					$.each(update_elements, function(k, v) {
+						$(window).trigger('onAfterAjaxUpdate', v);
+					});
 					
 					context.onAfterUpdate && context.onAfterUpdate();
-					context.onSuccess && context.onSuccess();
+					context.onSuccess && context.onSuccess(data);
 				},
 				
 				/**
@@ -298,13 +322,16 @@
 				 * @type Function
 				 * @return none
 				 */
-				onFailure: function() {
-					eval(self.javascript);
+				onFailure: function(data, status, message) {
+					var self = this;
 					
-					this.popupError();
+					this.popupError(message);
+					
+					if(context.execScriptsOnFailure)
+						eval(self.javascript);
 					
 					context.onAfterError && context.onAfterError();
-					context.onFailure && context.onFailure();
+					context.onFailure && context.onFailure(data, status, message);
 				},
 				
 				/**
@@ -336,28 +363,30 @@
 					xhr.setRequestHeader('PHPR-EVENT-HANDLER', 'ev{onHandleRequest}');
 				},
 				type: 'POST',
-				failure: function(data) {
+				error: function(data, status, message) {
 					response.text = data;
 					
 					response.onComplete();
-					response.onFailure();
+					response.onFailure(data, status, message);
 				},
 				success: function(data) {
 					response.text = data;
 					
 					response.onComplete();
 					
-					response.isSuccess() ? response.onSuccess() : response.onFailure();
+					response.isSuccess() ? response.onSuccess(data) : response.onFailure(data, 'error', response.html.replace('@AJAX-ERROR@', ''));
 				}
 			}, context.ajax);
 
-			if(self.options.loadIndicator.show)
+			if(context.loadIndicator.show)
 				self.showLoadingIndicator();
 
 			context.prepareFunction && context.prepareFunction();
 			context.onBeforePost && context.onBeforePost();
 			
-			self.busy = true;
+			if(context.lock)
+				self.busy = true;
+			
 			$.ajax(request);
 		},
 		
@@ -399,7 +428,7 @@
 		 * @return none
 		 */
 		hideLoadingIndicator: function() {
-			self.loadingIndicator = this.loadingIndicator.remove();
+			this.loadingIndicator.hide();
 		},
 		
 		/**
