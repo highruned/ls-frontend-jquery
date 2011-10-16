@@ -83,8 +83,17 @@
 	$.fn.serializeParam = function() {
 		var params = {};
 
-		$.each(this.serializeArray(), function(index, value) {
-			params[value.name] = value.value;
+		jQuery.each(this.serializeArray(), function(index, value) {
+			if(value.name.substr(value.name.length - 2, 2) == '[]') {
+				if(!params[value.name]) {
+					params[value.name] = new Array();
+				}
+				
+				params[value.name].push(value.value);
+			} 
+			else {
+				params[value.name] = value.value;
+			}
 		});
 
 		return params;
