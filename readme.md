@@ -11,9 +11,11 @@ jQuery alternative to the front-end library for LemonStand.
 
 ## Example (upload files and change the appropriate paths)
 
-  <link href="<?= root_url('/') ?>resources/css/ls_frontend.css" rel="stylesheet" media="screen" />
-  <script src="<?= root_url('/') ?>resources/js/jquery-1.4.2.min.js"></script>
-  <script src="<?= root_url('/') ?>resources/js/ls_frontend.js"></script>
+```html
+<link href="<?= root_url('/') ?>resources/css/ls_frontend.css" rel="stylesheet" media="screen" />
+<script src="<?= root_url('/') ?>resources/js/jquery-1.4.2.min.js"></script>
+<script src="<?= root_url('/') ?>resources/js/ls_frontend.js"></script>
+```
 
 ## Technical
 
