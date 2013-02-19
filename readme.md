@@ -1,4 +1,4 @@
-# ls-frontend
+# ls-frontend-jquery
 
 jQuery alternative to the front-end library for LemonStand.
 
