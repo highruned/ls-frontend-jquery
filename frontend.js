@@ -84,12 +84,14 @@
 		var params = {};
 
 		jQuery.each(this.serializeArray(), function(index, value) {
-			if(value.name.substr(value.name.length - 2, 2) == '[]') {
-				if(!params[value.name]) {
-					params[value.name] = new Array();
+			if(value.name.substr(value.name.length - 2, 2) === '[]') {
+				var name = value.name.substr(0, value.name.length - 2);
+				
+				if(!params[name]) {
+					params[name] = [];
 				}
 				
-				params[value.name].push(value.value);
+				params[name].push(value.value);
 			} 
 			else {
 				params[value.name] = value.value;
@@ -105,7 +107,7 @@
 	 * @return none
 	 */
 	$.fn.getForm = function() {
-		return $(this).parents('form:first');
+		return $(this).closest('form');
 	};
 
 	/**
@@ -388,7 +390,7 @@
 			}, context.ajax);
 
 			if(context.loadIndicator.show)
-				self.showLoadingIndicator();
+				self.showLoadingIndicator(context);
 
 			context.prepareFunction && context.prepareFunction();
 			context.onBeforePost && context.onBeforePost();
@@ -404,7 +406,7 @@
 		 * @type Function
 		 * @return none
 		 */
-		showLoadingIndicator: function() {
+		showLoadingIndicator: function(context) {
 			var self = this;
 			
 			var options = $.extend(true, {}, self.options.loadIndicator);
